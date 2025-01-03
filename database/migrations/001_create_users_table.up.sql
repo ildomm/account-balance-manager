@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS users (
+    id          BIGSERIAL PRIMARY KEY,
+    balance     DECIMAL(10,2) NOT NULL DEFAULT 0.00 CHECK (balance >= 0),
+    created_at  TIMESTAMP(6) WITHOUT TIME ZONE NOT NULL
+);

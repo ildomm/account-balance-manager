@@ -38,7 +38,6 @@ erDiagram
       string transactionId
       uint64 userId
       float amount
-      string state
       string source
       datetime createdAt
    }
