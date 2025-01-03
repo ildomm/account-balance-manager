@@ -60,8 +60,7 @@ func (q *PostgresQuerier) Close() {
 
 var (
 	//go:embed migrations/*.sql
-	fs           embed.FS
-	ErrorNilUUID = errors.New("UUID is nil")
+	fs embed.FS
 )
 
 func (q *PostgresQuerier) migrate() error {
