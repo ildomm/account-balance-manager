@@ -1,0 +1,124 @@
+openapi: 3.0.0
+info:
+  title: User Transaction and Balance API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /user/{userId}/transactions:
+    post:
+      summary: Add a transaction for a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: uint64
+            minimum: 1
+          description: The ID of the user
+        - name: Source-Type
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [game, server, payment]
+          description: The source of the transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/transactionRequest'
+      responses:
+        '200':
+          description: Transaction successfully processed
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorResponse'
+
+  /user/{userId}/balance:
+    get:
+      summary: Get the balance of a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: uint64
+            minimum: 1
+          description: The ID of the user
+      responses:
+        '200':
+          description: User's balance retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/userBalanceResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorResponse'
+
+components:
+  schemas:
+
+    transactionRequest:
+      type: object
+      properties:
+        state:
+          type: string
+          description: The status of the transaction
+          enum: [win, lose]
+        amount:
+          type: string
+          description: The amount for the transaction, as a string with up to 2 decimal places
+        transactionId:
+          type: string
+          description: A unique identifier for the transaction
+      required:
+        - state
+        - amount
+        - transactionId
+
+    userBalanceResponse:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: uint64
+          description: The ID of the user
+        balance:
+          type: string
+          description: The user's current balance in string format (2 decimal places)
+      required:
+        - userId
+        - balance
+        
+    errorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message explaining the reason for failure
+        code:
+          type: integer
+          description: The error code
+      required:
+        - error
+        - code
