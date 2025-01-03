@@ -22,14 +22,14 @@ func NewTestDatabase(t *testing.T) *TestDatabase {
 
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:16.3",
-		ExposedPorts: []string{"5434/tcp"},
-		AutoRemove:   false,
+		ExposedPorts: []string{"5432/tcp"},
+		AutoRemove:   true,
 		Env: map[string]string{
 			"POSTGRES_USER":     "postgres",
 			"POSTGRES_PASSWORD": "postgres",
 			"POSTGRES_DB":       "postgres",
 		},
-		WaitingFor: wait.ForListeningPort("5434/tcp"),
+		WaitingFor: wait.ForListeningPort("5432/tcp"),
 	}
 	postgres, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -44,7 +44,7 @@ func NewTestDatabase(t *testing.T) *TestDatabase {
 func (db *TestDatabase) Port(t *testing.T) int {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	p, err := db.instance.MappedPort(ctx, "5434")
+	p, err := db.instance.MappedPort(ctx, "5432")
 	require.NoError(t, err)
 	return p.Int()
 }
