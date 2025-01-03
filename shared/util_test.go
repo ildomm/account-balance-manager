@@ -11,8 +11,8 @@ import (
 
 func TestWaitForSignal(t *testing.T) {
 	// Use a buffered channel to avoid blocking the sender goroutine
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, syscall.SIGINT)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT)
 
 	go func() {
 		// Simulate sending a signal after a delay
