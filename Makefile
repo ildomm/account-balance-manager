@@ -10,3 +10,6 @@ deps:
 	go env -w "GOPRIVATE=github.com/ildomm/*"
 	go mod download
 
+.PHONY: unit-test
+unit-test: deps
+	go test -tags=testing -count=1 ./...
