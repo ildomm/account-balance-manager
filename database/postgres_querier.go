@@ -204,3 +204,20 @@ func (q *PostgresQuerier) TransactionIDExist(ctx context.Context, transactionID 
 		return false, err
 	}
 }
+
+const updateUserSQL = `
+	UPDATE users
+	SET 
+		balance = :balance
+	WHERE id = :id`
+
+func (q *PostgresQuerier) UpdateUserBalance(ctx context.Context, txn sqlx.Tx, userID int, balance float64) error {
+	user := entity.User{
+		ID:      userID,
+		Balance: balance,
+	}
+
+	_, err := txn.NamedExecContext(ctx, updateUserSQL, user)
+
+	return err
+}

@@ -93,6 +93,25 @@ func TestDatabaseWithTransaction(t *testing.T) {
 		})
 		require.NoError(t, err)
 	})
+
+	t.Run("UpdateUserBalance_Success", func(t *testing.T) {
+
+		// Start a transaction that is expected to WORK
+		err := q.WithTransaction(ctx, func(txn *sqlx.Tx) error {
+
+			err := q.UpdateUserBalance(ctx, *txn, 1, 100)
+			require.NoError(t, err)
+
+			// No error, then the db commit() will happen
+			return nil
+		})
+		require.NoError(t, err)
+
+		// Check the new balance
+		user, err := q.SelectUser(ctx, 1)
+		require.NoError(t, err)
+		require.Equal(t, 100.0, user.Balance)
+	})
 }
 
 func TestDatabaseBasicOperations(t *testing.T) {
