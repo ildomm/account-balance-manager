@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"errors"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -14,7 +15,7 @@ import (
 
 func TestCreateGameResultSuccess(t *testing.T) {
 	databaseMock := test_helpers.NewDatabaseMock()
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	// Mock data
 	userID := 1
@@ -60,7 +61,7 @@ func TestCreateGameResultTransactionIDExists(t *testing.T) {
 
 	instance := NewGameResultDAO(databaseMock)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	userID := 1
 	gameStatus := entity.GameStatusWin
 	amount := 100.0
@@ -81,7 +82,7 @@ func TestCreateGameResultUserNotFound(t *testing.T) {
 
 	instance := NewGameResultDAO(databaseMock)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	userID := 1
 	gameStatus := entity.GameStatusWin
 	amount := 100.0
@@ -103,7 +104,7 @@ func TestCreateGameResultInsufficientBalance(t *testing.T) {
 
 	instance := NewGameResultDAO(databaseMock)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	userID := 1
 	gameStatus := entity.GameStatusLost // Assuming this triggers the balance check
 	amount := 300.0                     // Assuming the user's balance is less than this amount
@@ -128,7 +129,7 @@ func TestCreateGameResultDatabaseError(t *testing.T) {
 
 	instance := NewGameResultDAO(databaseMock)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	userID := 1
 	gameStatus := entity.GameStatusWin
 	amount := 100.0
@@ -148,4 +149,52 @@ func TestCreateGameResultDatabaseError(t *testing.T) {
 
 	assert.EqualError(t, err, entity.ErrCreatingGameResult.Error(), "CreateGameResult should return ErrCreatingGameResult")
 	databaseMock.AssertExpectations(t)
+}
+
+func TestCreateGameResultSuccessMultiple(t *testing.T) {
+	databaseMock := test_helpers.NewDatabaseMock()
+	ctx := context.Background()
+
+	instance := NewGameResultDAO(databaseMock)
+
+	userID := 1
+	gameStatus := entity.GameStatusWin
+	amount := 100.0
+	transactionSource := entity.TransactionSourceGame
+	transactionID := "unique-transaction-id"
+
+	// Mock successful interactions
+	databaseMock.On("TransactionIDExist", ctx, mock.Anything)
+	databaseMock.On("SelectUser", ctx, userID).Return() // no fake results
+	databaseMock.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(*sqlx.Tx) error"))
+	databaseMock.On("InsertGameResult", ctx, mock.Anything, mock.Anything)
+	databaseMock.On("UpdateUserBalance", ctx, mock.Anything, userID, mock.Anything)
+
+	// Give to the mock a user with a balance of 0
+	databaseMock.WithTransaction(ctx, func(txn *sqlx.Tx) error {
+		databaseMock.UpdateUserBalance(ctx, *txn, userID, 0)
+		return nil
+	})
+
+	// Inject many game results
+	toInjectTotalEntries := [1000]int{} //nolint:all
+	totalInjected := len(toInjectTotalEntries)
+	expectedBalance := amount * float64(totalInjected)
+
+	for range toInjectTotalEntries {
+		transactionID = uuid.New().String()
+		_, err := instance.CreateGameResult(ctx, userID, gameStatus, amount, transactionSource, transactionID)
+		assert.NoError(t, err)
+	}
+
+	// Basic mockers expectations check
+	databaseMock.AssertExpectations(t)
+
+	// Count the game results
+	assert.Equal(t, databaseMock.GameCount(), totalInjected)
+
+	// Compare the use balance
+	user, err := databaseMock.SelectUser(ctx, userID)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedBalance, user.Balance)
 }
