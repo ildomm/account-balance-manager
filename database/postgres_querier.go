@@ -188,3 +188,19 @@ func (q *PostgresQuerier) SelectUser(ctx context.Context, userID int) (*entity.U
 	}
 	return &user, nil
 }
+
+const selectCheckTransactionSQL = `SELECT count(*) FROM game_results WHERE transaction_id = $1`
+
+func (q *PostgresQuerier) TransactionIDExist(ctx context.Context, transactionID string) (bool, error) {
+
+	row := q.dbConn.QueryRowContext(ctx, selectCheckTransactionSQL, transactionID)
+	var count int64
+
+	err := row.Scan(&count)
+
+	if count > 0 {
+		return true, err
+	} else {
+		return false, err
+	}
+}

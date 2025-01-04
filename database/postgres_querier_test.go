@@ -106,4 +106,38 @@ func TestDatabaseBasicOperations(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, userID, user.ID)
 	})
+
+	t.Run("TransactionIDExist_None", func(t *testing.T) {
+		exist, err := q.TransactionIDExist(ctx, "anything")
+		require.NoError(t, err)
+		require.False(t, exist)
+	})
+
+	t.Run("TransactionIDExist_One", func(t *testing.T) {
+		gameResult := entity.GameResult{
+			UserID:            1,
+			GameStatus:        entity.GameStatusWin,
+			TransactionSource: entity.TransactionSourceServer,
+			TransactionID:     "anything",
+			Amount:            10,
+			CreatedAt:         time.Now(),
+		}
+
+		// Start a transaction that is expected to WORK
+		err := q.WithTransaction(ctx, func(txn *sqlx.Tx) error {
+
+			id, err := q.InsertGameResult(ctx, *txn, gameResult)
+			require.NoError(t, err)
+
+			gameResult.ID = id
+
+			// No error, then the db commit() will happen
+			return nil
+		})
+		require.NoError(t, err)
+
+		exist, err := q.TransactionIDExist(ctx, "anything")
+		require.NoError(t, err)
+		require.True(t, exist)
+	})
 }
