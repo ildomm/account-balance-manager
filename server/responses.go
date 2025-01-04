@@ -5,9 +5,15 @@ import (
 	"net/http"
 )
 
-// Response is the generic API response container.
-type Response struct {
-	Data interface{} `json:"data"`
+// HealthResponse represents the response for the health check.
+type HealthResponse struct {
+	Status  string `json:"status"`
+	Version string `json:"version"`
+}
+
+type UserResponse struct {
+	UserID  int    `json:"userId"`
+	Balance string `json:"balance"`
 }
 
 // ErrorResponse is the generic error API response container.
@@ -43,25 +49,10 @@ func WriteErrorResponse(w http.ResponseWriter, code int, errors []string) {
 func WriteAPIResponse(w http.ResponseWriter, code int, data interface{}) {
 	w.WriteHeader(code)
 
-	response := Response{
-		Data: data,
-	}
-
-	bytes, err := json.MarshalIndent(response, "", "  ")
+	bytes, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		WriteInternalError(w)
 	}
 
 	w.Write(bytes) //nolint:all
-}
-
-// HealthResponse represents the response for the health check.
-type HealthResponse struct {
-	Status  string `json:"status"`
-	Version string `json:"version"`
-}
-
-type UserResponse struct {
-	UserID  int    `json:"userId"`
-	Balance string `json:"balance"`
 }

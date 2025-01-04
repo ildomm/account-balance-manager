@@ -44,7 +44,7 @@ func TestWriteAPIResponse(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code, "unexpected status code")
 
-	expectedBytes, err := json.MarshalIndent(Response{Data: data}, "", "  ")
+	expectedBytes, err := json.MarshalIndent(data, "", "  ")
 	require.NoError(t, err)
 
 	expected := string(expectedBytes)
