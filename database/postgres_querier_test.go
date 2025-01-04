@@ -3,12 +3,15 @@ package database
 import (
 	"context"
 	"fmt"
+	"github.com/ildomm/account-balance-manager/entity"
 	"github.com/ildomm/account-balance-manager/test_helpers"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestPostgresQuerier(t *testing.T) {
@@ -52,10 +55,108 @@ func TestPostgresQuerier(t *testing.T) {
 	})
 }
 
+func setupTestQuerier(t *testing.T) (context.Context, func(t *testing.T), *PostgresQuerier) {
+	testDB := test_helpers.NewTestDatabase(t)
+	ctx := context.Background()
+	q, err := NewPostgresQuerier(ctx, testDB.ConnectionString(t)+"?sslmode=disable")
+	require.NoError(t, err)
+
+	return ctx, func(t *testing.T) {
+		testDB.Close(t)
+	}, q
+}
+
 func TestDatabaseWithTransaction(t *testing.T) {
-	// TODO: Implement
+	ctx, teardownTest, q := setupTestQuerier(t)
+	defer teardownTest(t)
+
+	t.Run("InsertGameResult_Success", func(t *testing.T) {
+		gameResult := entity.GameResult{
+			UserID:            1,
+			GameStatus:        entity.GameStatusWin,
+			TransactionSource: entity.TransactionSourceServer,
+			TransactionID:     "anything",
+			Amount:            10,
+			CreatedAt:         time.Now(),
+		}
+
+		// Start a transaction that is expected to WORK
+		err := q.WithTransaction(ctx, func(txn *sqlx.Tx) error {
+
+			id, err := q.InsertGameResult(ctx, *txn, gameResult)
+			require.NoError(t, err)
+
+			gameResult.ID = id
+
+			// No error, then the db commit() will happen
+			return nil
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("UpdateUserBalance_Success", func(t *testing.T) {
+
+		// Start a transaction that is expected to WORK
+		err := q.WithTransaction(ctx, func(txn *sqlx.Tx) error {
+
+			err := q.UpdateUserBalance(ctx, *txn, 1, 100)
+			require.NoError(t, err)
+
+			// No error, then the db commit() will happen
+			return nil
+		})
+		require.NoError(t, err)
+
+		// Check the new balance
+		user, err := q.SelectUser(ctx, 1)
+		require.NoError(t, err)
+		require.Equal(t, 100.0, user.Balance)
+	})
 }
 
 func TestDatabaseBasicOperations(t *testing.T) {
-	// TODO: Implement
+	ctx, teardownTest, q := setupTestQuerier(t)
+	defer teardownTest(t)
+
+	userID := 1
+
+	t.Run("SelectUser_Success", func(t *testing.T) {
+		user, err := q.SelectUser(ctx, userID)
+		require.NoError(t, err)
+		require.Equal(t, userID, user.ID)
+	})
+
+	t.Run("TransactionIDExist_None", func(t *testing.T) {
+		exist, err := q.TransactionIDExist(ctx, "anything")
+		require.NoError(t, err)
+		require.False(t, exist)
+	})
+
+	t.Run("TransactionIDExist_One", func(t *testing.T) {
+		gameResult := entity.GameResult{
+			UserID:            1,
+			GameStatus:        entity.GameStatusWin,
+			TransactionSource: entity.TransactionSourceServer,
+			TransactionID:     "anything",
+			Amount:            10,
+			CreatedAt:         time.Now(),
+		}
+
+		// Start a transaction that is expected to WORK
+		err := q.WithTransaction(ctx, func(txn *sqlx.Tx) error {
+
+			id, err := q.InsertGameResult(ctx, *txn, gameResult)
+			require.NoError(t, err)
+
+			gameResult.ID = id
+
+			// No error, then the db commit() will happen
+			return nil
+		})
+		require.NoError(t, err)
+
+		exist, err := q.TransactionIDExist(ctx, "anything")
+		require.NoError(t, err)
+		require.True(t, exist)
+	})
 }

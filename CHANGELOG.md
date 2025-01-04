@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.0.3
+
+- Implement database querier concrete methods
+
 ## v0.0.2
 
 - Configure Golang Version

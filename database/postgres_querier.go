@@ -2,12 +2,14 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"embed"
 	"errors"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/ildomm/account-balance-manager/entity"
 	"github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -143,3 +145,79 @@ func (q *PostgresQuerier) WithTransaction(ctx context.Context, fn func(*sqlx.Tx)
 }
 
 ////////////////////////////////// Database Querier domain operations /////////////////////////////////////////////////////////
+
+const insertGameResultSQL = `
+	INSERT INTO game_results ( user_id, game_status, transaction_source, transaction_id, amount, created_at)
+	VALUES                   ( $1,      $2,          $3,                 $4,             $5,     $6)
+	RETURNING id`
+
+func (q *PostgresQuerier) InsertGameResult(ctx context.Context, txn sqlx.Tx, gameResult entity.GameResult) (int, error) {
+	var id int
+
+	err := txn.GetContext(
+		ctx,
+		&id,
+		insertGameResultSQL,
+		gameResult.UserID,
+		gameResult.GameStatus,
+		gameResult.TransactionSource,
+		gameResult.TransactionID,
+		gameResult.Amount,
+		gameResult.CreatedAt)
+
+	return id, err
+}
+
+const selectUserSQL = `SELECT * FROM users WHERE id = $1`
+
+func (q *PostgresQuerier) SelectUser(ctx context.Context, userID int) (*entity.User, error) {
+	var user entity.User
+
+	err := q.dbConn.GetContext(
+		ctx,
+		&user,
+		selectUserSQL,
+		userID)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
+	return &user, nil
+}
+
+const selectCheckTransactionSQL = `SELECT count(*) FROM game_results WHERE transaction_id = $1`
+
+func (q *PostgresQuerier) TransactionIDExist(ctx context.Context, transactionID string) (bool, error) {
+
+	row := q.dbConn.QueryRowContext(ctx, selectCheckTransactionSQL, transactionID)
+	var count int64
+
+	err := row.Scan(&count)
+
+	if count > 0 {
+		return true, err
+	} else {
+		return false, err
+	}
+}
+
+const updateUserSQL = `
+	UPDATE users
+	SET 
+		balance = :balance
+	WHERE id = :id`
+
+func (q *PostgresQuerier) UpdateUserBalance(ctx context.Context, txn sqlx.Tx, userID int, balance float64) error {
+	user := entity.User{
+		ID:      userID,
+		Balance: balance,
+	}
+
+	_, err := txn.NamedExecContext(ctx, updateUserSQL, user)
+
+	return err
+}
