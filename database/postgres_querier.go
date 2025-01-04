@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"embed"
 	"errors"
 	"github.com/golang-migrate/migrate/v4"
@@ -165,4 +166,25 @@ func (q *PostgresQuerier) InsertGameResult(ctx context.Context, txn sqlx.Tx, gam
 		gameResult.CreatedAt)
 
 	return id, err
+}
+
+const selectUserSQL = `SELECT * FROM users WHERE id = $1`
+
+func (q *PostgresQuerier) SelectUser(ctx context.Context, userID int) (*entity.User, error) {
+	var user entity.User
+
+	err := q.dbConn.GetContext(
+		ctx,
+		&user,
+		selectUserSQL,
+		userID)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
+	return &user, nil
 }

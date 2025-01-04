@@ -96,5 +96,14 @@ func TestDatabaseWithTransaction(t *testing.T) {
 }
 
 func TestDatabaseBasicOperations(t *testing.T) {
-	// TODO: Implement
+	ctx, teardownTest, q := setupTestQuerier(t)
+	defer teardownTest(t)
+
+	userID := 1
+
+	t.Run("SelectUser_Success", func(t *testing.T) {
+		user, err := q.SelectUser(ctx, userID)
+		require.NoError(t, err)
+		require.Equal(t, userID, user.ID)
+	})
 }
