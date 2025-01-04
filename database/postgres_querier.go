@@ -8,6 +8,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/ildomm/account-balance-manager/entity"
 	"github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -143,3 +144,25 @@ func (q *PostgresQuerier) WithTransaction(ctx context.Context, fn func(*sqlx.Tx)
 }
 
 ////////////////////////////////// Database Querier domain operations /////////////////////////////////////////////////////////
+
+const insertGameResultSQL = `
+	INSERT INTO game_results ( user_id, game_status, transaction_source, transaction_id, amount, created_at)
+	VALUES                   ( $1,      $2,          $3,                 $4,             $5,     $6)
+	RETURNING id`
+
+func (q *PostgresQuerier) InsertGameResult(ctx context.Context, txn sqlx.Tx, gameResult entity.GameResult) (int, error) {
+	var id int
+
+	err := txn.GetContext(
+		ctx,
+		&id,
+		insertGameResultSQL,
+		gameResult.UserID,
+		gameResult.GameStatus,
+		gameResult.TransactionSource,
+		gameResult.TransactionID,
+		gameResult.Amount,
+		gameResult.CreatedAt)
+
+	return id, err
+}

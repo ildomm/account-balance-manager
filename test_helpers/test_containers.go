@@ -23,7 +23,7 @@ func NewTestDatabase(t *testing.T) *TestDatabase {
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:16.3",
 		ExposedPorts: []string{"5432/tcp"},
-		AutoRemove:   true,
+		AutoRemove:   false,
 		Env: map[string]string{
 			"POSTGRES_USER":     "postgres",
 			"POSTGRES_PASSWORD": "postgres",
