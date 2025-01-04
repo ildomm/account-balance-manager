@@ -11,21 +11,21 @@ import (
 	"time"
 )
 
-type gameResultDAO struct {
+type accountDAO struct {
 	querier database.Querier
 	lock    sync.Mutex
 }
 
-// NewGameResultDAO creates a new game result DAO
-func NewGameResultDAO(querier database.Querier) *gameResultDAO {
-	return &gameResultDAO{querier: querier}
+// NewAccountDAO creates a new game result DAO
+func NewAccountDAO(querier database.Querier) *accountDAO {
+	return &accountDAO{querier: querier}
 }
 
 // CreateGameResult creates a new game result
 // It validates the transaction and updates the user balance
 // It returns the created game result
 // It returns an error if the transaction is invalid or if there is an error creating the game result
-func (dm *gameResultDAO) CreateGameResult(ctx context.Context, userID int, gameStatus entity.GameStatus, amount float64, transactionSource entity.TransactionSource, transactionID string) (*entity.GameResult, error) {
+func (dm *accountDAO) CreateGameResult(ctx context.Context, userID int, gameStatus entity.GameStatus, amount float64, transactionSource entity.TransactionSource, transactionID string) (*entity.GameResult, error) {
 	dm.lock.Lock()
 	defer dm.lock.Unlock()
 
@@ -67,7 +67,7 @@ func (dm *gameResultDAO) CreateGameResult(ctx context.Context, userID int, gameS
 
 // validateTransaction validates the transaction
 // It returns the user if the transaction is valid
-func (dm *gameResultDAO) validateTransaction(ctx context.Context, userID int, gameStatus entity.GameStatus, amount float64, transactionID string) (*entity.User, error) {
+func (dm *accountDAO) validateTransaction(ctx context.Context, userID int, gameStatus entity.GameStatus, amount float64, transactionID string) (*entity.User, error) {
 	exists, err := dm.querier.TransactionIDExist(ctx, transactionID)
 	if err != nil {
 		log.Printf("error locating transaction: %v", err)
@@ -95,7 +95,7 @@ func (dm *gameResultDAO) validateTransaction(ctx context.Context, userID int, ga
 }
 
 // calculateNewBalance calculates the new balance based on the game status
-func (dm *gameResultDAO) calculateNewBalance(currentBalance float64, gameStatus entity.GameStatus, amount float64) float64 {
+func (dm *accountDAO) calculateNewBalance(currentBalance float64, gameStatus entity.GameStatus, amount float64) float64 {
 	if gameStatus == entity.GameStatusWin {
 		return currentBalance + amount
 	}
@@ -103,7 +103,7 @@ func (dm *gameResultDAO) calculateNewBalance(currentBalance float64, gameStatus 
 }
 
 // persistGameResultTransaction persists the game result transaction
-func (dm *gameResultDAO) persistGameResultTransaction(ctx context.Context, txn *sqlx.Tx, userID int, gameResult *entity.GameResult, balance float64) error {
+func (dm *accountDAO) persistGameResultTransaction(ctx context.Context, txn *sqlx.Tx, userID int, gameResult *entity.GameResult, balance float64) error {
 
 	id, err := dm.querier.InsertGameResult(ctx, *txn, *gameResult)
 	if err != nil {
@@ -116,4 +116,19 @@ func (dm *gameResultDAO) persistGameResultTransaction(ctx context.Context, txn *
 	}
 
 	return nil
+}
+
+// RetrieveUser returns the user with the given ID
+func (dm *accountDAO) RetrieveUser(ctx context.Context, userID int) (*entity.User, error) {
+
+	user, err := dm.querier.SelectUser(ctx, userID)
+	if err != nil {
+		log.Printf("error locating user: %v", err)
+		return nil, err
+	}
+	if user == nil {
+		return nil, entity.ErrUserNotFound
+	}
+
+	return user, nil
 }
