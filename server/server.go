@@ -62,7 +62,8 @@ func (s *Server) router() *mux.Router {
 	r := mux.NewRouter()
 
 	// Interceptors
-	// TODO: Add middleware here
+	r.Use(NewRecoverMiddleware())
+	r.Use(NewLoggingMiddleware())
 
 	r.HandleFunc("/health", s.HealthHandler).Methods(http.MethodGet)
 
