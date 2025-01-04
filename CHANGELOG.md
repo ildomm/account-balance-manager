@@ -3,11 +3,11 @@
 ## v0.0.5
 
 - Define HTTP server
+  - Define HTTP server configuration
+  - Define HTTP server middleware
   - Define HTTP server routes
   - Define HTTP server handlers
-  - Define HTTP server middleware
   - Define HTTP server error handling
-  - Define HTTP server configuration
   - Define HTTP server tests
   
 ## v0.0.4

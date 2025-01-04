@@ -60,3 +60,8 @@ type HealthResponse struct {
 	Status  string `json:"status"`
 	Version string `json:"version"`
 }
+
+type UserResponse struct {
+	UserID  int    `json:"userId"`
+	Balance string `json:"balance"`
+}
