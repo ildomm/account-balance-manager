@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
+	"github.com/ildomm/account-balance-manager/dao"
 	"github.com/ildomm/account-balance-manager/database"
+	"github.com/ildomm/account-balance-manager/server"
 	"github.com/ildomm/account-balance-manager/shared"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -32,7 +36,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("parsing command line: %s", err)
 	}
-	// TODO: Implement ParseHTTPPort
+	httpServerPort, err := shared.ParseHTTPPort(os.Args[1:])
+	if err != nil {
+		log.Fatalf("parsing command line: %s", err)
+	}
 
 	// Set up the database connection and run migrations
 	log.Printf("connecting to database")
@@ -46,10 +53,20 @@ func main() {
 	defer querier.Close()
 
 	// Initialize manager
-	// TODO: Implement
+	gameAccountManager := dao.NewAccountDAO(querier)
 
 	// Initialize the server
-	// TODO: Implement
+	server := server.NewServer()
+	server.WithListenAddress(httpServerPort)
+	server.WithAccountManager(gameAccountManager)
 
-	log.Println("Server closed")
+	log.Println("Starting server on", server.ListenAddress())
+
+	if err := server.Run(); err != nil {
+		if !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal("Could not start server on", server.ListenAddress())
+		} else {
+			log.Println("Server closed")
+		}
+	}
 }

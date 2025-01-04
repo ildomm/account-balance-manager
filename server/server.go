@@ -19,7 +19,7 @@ const (
 // Server manages HTTP requests and dispatches them to the appropriate services.
 type Server struct {
 	listenAddress     int
-	gameResultManager dao.DAO
+	accountManager    dao.DAO
 	readHeaderTimeout time.Duration
 	writeTimeout      time.Duration
 	readTimeout       time.Duration
@@ -67,6 +67,10 @@ func (s *Server) router() *mux.Router {
 
 	r.HandleFunc("/health", s.HealthHandler).Methods(http.MethodGet)
 
+	dh := NewAccountHandler(s.accountManager)
+	r.HandleFunc("/user/{id}/transaction", dh.CreateGameResultFunc).Methods(http.MethodPost)
+	r.HandleFunc("/user/{id}/balance", dh.RetrieveUserFunc).Methods(http.MethodGet)
+
 	return r
 }
 
@@ -88,8 +92,8 @@ func (s *Server) WithListenAddress(listenAddress int) {
 	s.listenAddress = listenAddress
 }
 
-func (s *Server) WithGameResultManager(gameResultManager dao.DAO) {
-	s.gameResultManager = gameResultManager
+func (s *Server) WithAccountManager(accountManager dao.DAO) {
+	s.accountManager = accountManager
 }
 
 func (s *Server) WithReadHeaderTimeout(readHeaderTimeout time.Duration) {

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DefaultListenAddress = 8000
+	DefaultListenAddress = 8080
 )
 
 var (
