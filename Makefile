@@ -1,4 +1,8 @@
-.PHONY: clean build
+.PHONY: clean build deps unit-test coverage-report coverage-total
+
+# Variables needed when building binaries
+VERSION := $(shell grep -oE -m 1 '([0-9]+)\.([0-9]+)\.([0-9]+)' CHANGELOG.md )
+GIT_SHA := $(shell git rev-parse HEAD )
 
 .PHONY: clean
 clean:
@@ -9,6 +13,13 @@ clean:
 deps:
 	go env -w "GOPRIVATE=github.com/ildomm/*"
 	go mod download
+
+.PHONY: build
+build: deps
+	# Build the http server  binary
+	cd cmd/api && \
+		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-X main.semVer=${VERSION} -X main.gitSha=${GIT_SHA}" \
+        -o ../../build/api
 
 .PHONY: unit-test
 unit-test: deps
