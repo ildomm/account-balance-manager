@@ -16,7 +16,7 @@ func TestCreateGameResultConcurrentOnMock(t *testing.T) {
 	databaseMock := test_helpers.NewDatabaseMock()
 	ctx := context.Background()
 
-	instance := NewGameResultDAO(databaseMock)
+	instance := NewAccountDAO(databaseMock)
 
 	userID := 1
 	gameStatus := entity.GameStatusWin
@@ -72,7 +72,7 @@ func TestCreateGameResultConcurrentWinLostOnMock(t *testing.T) {
 	databaseMock := test_helpers.NewDatabaseMock()
 	ctx := context.Background()
 
-	instance := NewGameResultDAO(databaseMock)
+	instance := NewAccountDAO(databaseMock)
 
 	// Mock parameters
 	userID := 1

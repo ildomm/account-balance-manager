@@ -13,7 +13,7 @@ import (
 	"github.com/ildomm/account-balance-manager/test_helpers"
 )
 
-func TestCreateGameResultSuccess(t *testing.T) {
+func TestCreateGameResultOnSuccess(t *testing.T) {
 	databaseMock := test_helpers.NewDatabaseMock()
 	ctx := context.Background()
 
@@ -26,7 +26,7 @@ func TestCreateGameResultSuccess(t *testing.T) {
 	transactionSource := entity.TransactionSourceGame
 	transactionID := "unique-transaction-id"
 
-	instance := NewGameResultDAO(databaseMock)
+	instance := NewAccountDAO(databaseMock)
 	databaseMock.On("WithTransaction", mock.Anything, mock.AnythingOfType("func(*sqlx.Tx) error"))
 	databaseMock.On("UpdateUserBalance", ctx, mock.Anything, userID, mock.Anything)
 
@@ -56,10 +56,10 @@ func TestCreateGameResultSuccess(t *testing.T) {
 	assert.Equal(t, finalBalance, user.Balance)
 }
 
-func TestCreateGameResultTransactionIDExists(t *testing.T) {
+func TestCreateGameResultOnTransactionIDExists(t *testing.T) {
 	databaseMock := test_helpers.NewDatabaseMock()
 
-	instance := NewGameResultDAO(databaseMock)
+	instance := NewAccountDAO(databaseMock)
 
 	ctx := context.Background()
 	userID := 1
@@ -77,10 +77,10 @@ func TestCreateGameResultTransactionIDExists(t *testing.T) {
 	databaseMock.AssertExpectations(t)
 }
 
-func TestCreateGameResultUserNotFound(t *testing.T) {
+func TestCreateGameResultOnUserNotFound(t *testing.T) {
 	databaseMock := test_helpers.NewDatabaseMock()
 
-	instance := NewGameResultDAO(databaseMock)
+	instance := NewAccountDAO(databaseMock)
 
 	ctx := context.Background()
 	userID := 1
@@ -99,10 +99,10 @@ func TestCreateGameResultUserNotFound(t *testing.T) {
 	databaseMock.AssertExpectations(t)
 }
 
-func TestCreateGameResultInsufficientBalance(t *testing.T) {
+func TestCreateGameResultOnInsufficientBalance(t *testing.T) {
 	databaseMock := test_helpers.NewDatabaseMock()
 
-	instance := NewGameResultDAO(databaseMock)
+	instance := NewAccountDAO(databaseMock)
 
 	ctx := context.Background()
 	userID := 1
@@ -124,10 +124,10 @@ func TestCreateGameResultInsufficientBalance(t *testing.T) {
 	databaseMock.AssertExpectations(t)
 }
 
-func TestCreateGameResultDatabaseError(t *testing.T) {
+func TestCreateGameResultOnDatabaseError(t *testing.T) {
 	databaseMock := test_helpers.NewDatabaseMock()
 
-	instance := NewGameResultDAO(databaseMock)
+	instance := NewAccountDAO(databaseMock)
 
 	ctx := context.Background()
 	userID := 1
@@ -151,11 +151,11 @@ func TestCreateGameResultDatabaseError(t *testing.T) {
 	databaseMock.AssertExpectations(t)
 }
 
-func TestCreateGameResultSuccessMultiple(t *testing.T) {
+func TestCreateGameResultOnSuccessMultiple(t *testing.T) {
 	databaseMock := test_helpers.NewDatabaseMock()
 	ctx := context.Background()
 
-	instance := NewGameResultDAO(databaseMock)
+	instance := NewAccountDAO(databaseMock)
 
 	userID := 1
 	gameStatus := entity.GameStatusWin
@@ -197,4 +197,58 @@ func TestCreateGameResultSuccessMultiple(t *testing.T) {
 	user, err := databaseMock.SelectUser(ctx, userID)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedBalance, user.Balance)
+}
+
+func TestRetrieveUserOnSuccess(t *testing.T) {
+	databaseMock := test_helpers.NewDatabaseMock()
+	ctx := context.Background()
+
+	instance := NewAccountDAO(databaseMock)
+
+	userID := 1
+	user := &entity.User{
+		ID:      userID,
+		Balance: 100.0,
+	}
+
+	databaseMock.On("SelectUser", ctx, userID).Return(user, nil)
+
+	retrievedUser, err := instance.RetrieveUser(ctx, userID)
+
+	assert.NoError(t, err)
+	assert.Equal(t, user, retrievedUser)
+	databaseMock.AssertExpectations(t)
+}
+
+func TestRetrieveUserOnUserNotFound(t *testing.T) {
+	databaseMock := test_helpers.NewDatabaseMock()
+	ctx := context.Background()
+
+	instance := NewAccountDAO(databaseMock)
+
+	userID := 1
+
+	databaseMock.On("SelectUser", ctx, userID).Return(nil, entity.ErrUserNotFound)
+
+	_, err := instance.RetrieveUser(ctx, userID)
+
+	assert.EqualError(t, err, entity.ErrUserNotFound.Error())
+	databaseMock.AssertExpectations(t)
+
+}
+func TestRetrieveUserOnDatabaseError(t *testing.T) {
+	databaseMock := test_helpers.NewDatabaseMock()
+	ctx := context.Background()
+
+	instance := NewAccountDAO(databaseMock)
+
+	userID := 1
+	databaseError := errors.New("database error")
+
+	databaseMock.On("SelectUser", ctx, userID).Return(nil, databaseError)
+
+	_, err := instance.RetrieveUser(ctx, userID)
+
+	assert.EqualError(t, err, databaseError.Error())
+	databaseMock.AssertExpectations(t)
 }
