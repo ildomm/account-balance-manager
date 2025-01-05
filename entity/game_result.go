@@ -10,7 +10,7 @@ type TransactionSource string
 
 const (
 	GameStatusWin  GameStatus = "win"
-	GameStatusLost GameStatus = "lost"
+	GameStatusLost GameStatus = "lose"
 )
 
 const (

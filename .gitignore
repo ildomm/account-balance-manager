@@ -17,6 +17,7 @@
 # Build directory is a temporary directory used during the build process.
 build/
 volume/
+db/
 
 # Go workspace file
 go.work

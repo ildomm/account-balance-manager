@@ -15,7 +15,7 @@ The application consists of 2 main components:
 The API Handler manages HTTP requests for retrieving balances and processing user transactions.
 
 #### API Endpoints
-- `POST /user/{userId}/transactions` - Processes a new transaction for a user.
+- `POST /user/{userId}/transaction` - Processes a new transaction for a user.
 - `GET /user/{userId}/balance` - Retrieves the current balance for a specific user.
 
 ### 2. Database
@@ -98,11 +98,7 @@ To generate and view test coverage reports:
   make coverage-total
   ```
 
-## Future Improvements
-- WIP
-
-## Missing Features
-- WIP
-
 ## Considerations
-- WIP
+- The database and persistence layer have been designed with extensibility in mind, allowing the use of other types of databases as long as they adhere to the required interfaces.
+- DAO (Data Access Object) components isolate the business logic from the database and HTTP layers, ensuring a clean and maintainable architecture.
+- The HTTP layer (server) is specifically structured to handle request reception, validation, interaction with the DAO, and generating appropriate responses.
