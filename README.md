@@ -1,7 +1,5 @@
 
 [![tests](https://github.com/ildomm/account-balance-manager/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ildomm/account-balance-manager/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ildomm/account-balance-manager?cache=v1)](https://goreportcard.com/report/github.com/ildomm/account-balance-manager)
-![coverage](https://raw.githubusercontent.com/ildomm/account-balance-manager/badges/.badges/main/coverage.svg)
 
 # Account Balance Manager
 User Account Balance Management System
@@ -67,13 +65,14 @@ Run the following command to deploy the application locally using Docker Compose
 docker-compose up -d
 ```
 
+
 ### Manual Testing
 1. Pre-populated user IDs in the database:
     - `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`.
 2. Run the application and use `curl` to interact with the API. For example:
     - Process a transaction for a user:
       ```bash
-      curl -X POST http://localhost:8080/user/1/transactions -H 'Content-Type: application/json' -H "Source-Type: game" -d "{"state": "win", "amount": "50.00", "transactionId": "abc123"}" 
+      curl -X POST http://localhost:8080/user/1/transaction -H 'Content-Type: application/json' -H "Source-Type: game" -d '{"state": "win", "amount": "50.00", "transactionId": "abc123"}' 
       ```
    - Retrieve a user's balance:
      ```bash

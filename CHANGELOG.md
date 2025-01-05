@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.1.0
+
+- Configure Docker
+  - Dockerfile
+  - docker-compose
+
 ## v0.0.5
 
 - Define HTTP server
