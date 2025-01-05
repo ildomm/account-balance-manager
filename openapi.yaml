@@ -8,7 +8,7 @@ servers:
     description: Local development server
 
 paths:
-  /user/{userId}/transactions:
+  /user/{userId}/transaction:
     post:
       summary: Add a transaction for a user
       parameters:

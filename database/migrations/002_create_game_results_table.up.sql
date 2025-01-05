@@ -1,5 +1,5 @@
 DROP TYPE IF EXISTS game_statuses;
-CREATE TYPE game_statuses AS ENUM ('win', 'lost');
+CREATE TYPE game_statuses AS ENUM ('win', 'lose');
 
 DROP TYPE IF EXISTS transaction_sources;
 CREATE TYPE transaction_sources AS ENUM ('game', 'server', 'payment');

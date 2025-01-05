@@ -19,11 +19,18 @@ FROM debian:bullseye-slim
 # Set environment variables
 ENV DATABASE_URL=""
 
+# Install netcat for the wait-for-service script
+RUN apt-get update && apt-get install -y netcat
+
 # Set the working directory
 WORKDIR /app
 
 # Copy the binary from the builder stage
 COPY --from=builder /app/build/api /usr/local/bin/api
+
+# Copy the wait-for-service.sh script
+COPY --from=builder /app/wait-for-service.sh /wait-for-service.sh
+RUN chmod +x /wait-for-service.sh
 
 # Expose port 8080
 EXPOSE 8080
