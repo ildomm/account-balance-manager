@@ -47,7 +47,7 @@ func (h *accountHandler) CreateGameResultFunc(w http.ResponseWriter, r *http.Req
 	}
 
 	// Validate the game status.
-	if req.GameStatus != entity.GameStatusWin && req.GameStatus != entity.GameStatusLost {
+	if req.GameStatus != entity.GameStatusWin && req.GameStatus != entity.GameStatusLose {
 		WriteErrorResponse(w, http.StatusBadRequest, []string{entity.ErrInvalidGameStatus.Error()})
 	}
 

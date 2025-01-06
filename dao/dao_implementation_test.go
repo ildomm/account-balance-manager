@@ -106,7 +106,7 @@ func TestCreateGameResultOnInsufficientBalance(t *testing.T) {
 
 	ctx := context.Background()
 	userID := 1
-	gameStatus := entity.GameStatusLost // Assuming this triggers the balance check
+	gameStatus := entity.GameStatusLose // Assuming this triggers the balance check
 	amount := 300.0                     // Assuming the user's balance is less than this amount
 	transactionSource := entity.TransactionSourceGame
 	transactionID := "unique-transaction-id"

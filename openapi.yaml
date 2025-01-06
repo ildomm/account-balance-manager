@@ -37,13 +37,25 @@ paths:
         '200':
           description: Transaction successfully processed
         '400':
-          description: Invalid request
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/errorResponse'
         '404':
           description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorResponse'
+        '406':
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorResponse'
+        '500':
+          description: Internal Server Error
           content:
             application/json:
               schema:
@@ -68,8 +80,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/userBalanceResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorResponse'
         '404':
           description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorResponse'
+        '500':
+          description: Internal Server Error
           content:
             application/json:
               schema:
@@ -116,9 +140,5 @@ components:
         error:
           type: string
           description: Error message explaining the reason for failure
-        code:
-          type: integer
-          description: The error code
       required:
         - error
-        - code

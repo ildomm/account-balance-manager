@@ -68,7 +68,7 @@ docker-compose up -d
 
 ### Manual Testing
 1. Pre-populated user IDs in the database:
-    - `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`.
+    - `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8` and `9`.
 2. Run the application and use `curl` to interact with the API. For example:
     - Process a transaction for a user:
       ```bash
@@ -102,3 +102,4 @@ To generate and view test coverage reports:
 - The database and persistence layer have been designed with extensibility in mind, allowing the use of other types of databases as long as they adhere to the required interfaces.
 - DAO (Data Access Object) components isolate the business logic from the database and HTTP layers, ensuring a clean and maintainable architecture.
 - The HTTP layer (server) is specifically structured to handle request reception, validation, interaction with the DAO, and generating appropriate responses.
+- The current implementation is expected to run as a single instance, to guarantee accuracy and consistency in balance calculations. If necessary to horizontally scale, additional design changes would be required.

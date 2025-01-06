@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// daoMock is a mock type for the DAO type
+// DAOMock is a mock type for the DAO type
 type DAOMock struct {
 	mock.Mock
 }

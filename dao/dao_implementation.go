@@ -87,7 +87,7 @@ func (dm *accountDAO) validateTransaction(ctx context.Context, userID int, gameS
 	}
 
 	// No negative balance allowed
-	if gameStatus == entity.GameStatusLost && user.Balance < amount {
+	if gameStatus == entity.GameStatusLose && user.Balance < amount {
 		return nil, entity.ErrUserNegativeBalance
 	}
 
