@@ -99,7 +99,7 @@ func TestCreateGameResultConcurrentWinLostOnMock(t *testing.T) {
 	databaseMock.WithTransaction(ctx, func(txn *sqlx.Tx) error {
 
 		// Must start with some balance, unless the user will have a negative balance for the first
-		// entity.GameStatusLost hit
+		// entity.GameStatusLose hit
 		databaseMock.UpdateUserBalance(ctx, *txn, userID, initialBalance)
 		return nil
 	})
@@ -124,7 +124,7 @@ func TestCreateGameResultConcurrentWinLostOnMock(t *testing.T) {
 		// A go routine for each game result
 		go func() {
 			defer wg.Done()
-			_, err := instance.CreateGameResult(ctx, userID, entity.GameStatusLost, amountPerIteration, transactionSource, uuid.New().String())
+			_, err := instance.CreateGameResult(ctx, userID, entity.GameStatusLose, amountPerIteration, transactionSource, uuid.New().String())
 			assert.NoError(t, err)
 		}()
 	}
