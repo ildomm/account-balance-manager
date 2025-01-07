@@ -3,15 +3,16 @@ package database
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/ildomm/account-balance-manager/entity"
 	"github.com/ildomm/account-balance-manager/test_helpers"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"strconv"
-	"strings"
-	"testing"
-	"time"
 )
 
 func TestPostgresQuerier(t *testing.T) {
