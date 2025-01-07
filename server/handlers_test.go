@@ -5,18 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ildomm/account-balance-manager/entity"
-	"github.com/ildomm/account-balance-manager/test_helpers"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/ildomm/account-balance-manager/entity"
+	"github.com/ildomm/account-balance-manager/test_helpers"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 // TestHealthHandlerSuccess tests the Health function for a successful response.
@@ -69,8 +69,10 @@ func TestGameResultFuncOnSuccess(t *testing.T) {
 
 	// Create the server and set the mock manager
 	server := NewServer()
-	port := rand.Intn(1000) + 8000
+
 	server.WithAccountManager(daoMock)
+	port, err := getAvailablePort(8000)
+	assert.NoError(t, err)
 	server.WithListenAddress(port)
 
 	go func() {
@@ -197,8 +199,9 @@ func TestCreateGameResultFuncOnErrors(t *testing.T) {
 			}
 
 			server := NewServer()
-			port := rand.Intn(1000) + 8000
 			server.WithAccountManager(daoMock)
+			port, err := getAvailablePort(8000)
+			assert.NoError(t, err)
 			server.WithListenAddress(port)
 
 			go func() {
@@ -244,8 +247,9 @@ func TestRetrieveUserFuncOnSuccess(t *testing.T) {
 
 	// Create the server and set the mock manager
 	server := NewServer()
-	port := rand.Intn(1000) + 8000
 	server.WithAccountManager(daoMock)
+	port, err := getAvailablePort(8000)
+	assert.NoError(t, err)
 	server.WithListenAddress(port)
 
 	go func() {
@@ -319,8 +323,9 @@ func TestRetrieveUserFuncOnErrors(t *testing.T) {
 			}
 
 			server := NewServer()
-			port := rand.Intn(1000) + 8000
 			server.WithAccountManager(daoMock)
+			port, err := getAvailablePort(8000)
+			assert.NoError(t, err)
 			server.WithListenAddress(port)
 
 			go func() {

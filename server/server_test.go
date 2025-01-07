@@ -2,10 +2,11 @@ package server
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 	"testing"
 	"time"
+
+	"net"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -42,7 +43,9 @@ func TestServerConfigurationSetters(t *testing.T) {
 // TestServerRun tests the Run method of the server.
 func TestServerRun(t *testing.T) {
 	server := NewServer()
-	port := rand.Intn(1000) + 8000
+
+	port, err := getAvailablePort(8000)
+	assert.NoError(t, err)
 	server.WithListenAddress(port)
 
 	go func() {
@@ -62,4 +65,19 @@ func TestServerRun(t *testing.T) {
 	resp, err := http.DefaultClient.Do(req)
 	assert.NoError(t, err, "request to server failed")
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "unexpected status code from health check")
+}
+
+// getAvailablePort finds an available port starting from the given port
+func getAvailablePort(startPort int) (int, error) {
+	maxAttempts := 100 // Try up to 100 ports
+	for port := startPort; port < startPort+maxAttempts; port++ {
+		addr := fmt.Sprintf(":%d", port)
+		ln, err := net.Listen("tcp", addr)
+		if err != nil {
+			continue
+		}
+		ln.Close()
+		return port, nil
+	}
+	return 0, fmt.Errorf("no available ports found in range %d-%d", startPort, startPort+maxAttempts-1)
 }
