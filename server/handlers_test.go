@@ -189,6 +189,38 @@ func TestCreateGameResultFuncOnErrors(t *testing.T) {
 			expectedStatus: http.StatusNotAcceptable,
 			sourceType:     string(entity.TransactionSourceGame),
 		},
+		{
+			name:           "Empty Transaction ID",
+			mockSetup:      nil,
+			userID:         "1",
+			requestBody:    CreateGameResultRequest{GameStatus: "win", Amount: "100", TransactionID: ""},
+			expectedStatus: http.StatusBadRequest,
+			sourceType:     string(entity.TransactionSourceGame),
+		},
+		{
+			name:           "Zero Amount",
+			mockSetup:      nil,
+			userID:         "1",
+			requestBody:    CreateGameResultRequest{GameStatus: "win", Amount: "0.00", TransactionID: "123"},
+			expectedStatus: http.StatusBadRequest,
+			sourceType:     string(entity.TransactionSourceGame),
+		},
+		{
+			name:           "Negative Amount",
+			mockSetup:      nil,
+			userID:         "1",
+			requestBody:    CreateGameResultRequest{GameStatus: "win", Amount: "-100.00", TransactionID: "123"},
+			expectedStatus: http.StatusBadRequest,
+			sourceType:     string(entity.TransactionSourceGame),
+		},
+		{
+			name:           "Missing Source-Type Header",
+			mockSetup:      nil,
+			userID:         "1",
+			requestBody:    CreateGameResultRequest{GameStatus: "win", Amount: "100", TransactionID: "123"},
+			expectedStatus: http.StatusBadRequest,
+			sourceType:     "", // Empty source type to test missing header
+		},
 	}
 
 	for _, tc := range testCases {
@@ -312,6 +344,18 @@ func TestRetrieveUserFuncOnErrors(t *testing.T) {
 			},
 			userID:         "1",
 			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:           "Zero User ID",
+			mockSetup:      nil,
+			userID:         "0",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Negative User ID",
+			mockSetup:      nil,
+			userID:         "-1",
+			expectedStatus: http.StatusBadRequest,
 		},
 	}
 
