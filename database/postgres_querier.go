@@ -5,6 +5,10 @@ import (
 	"database/sql"
 	"embed"
 	"errors"
+	"fmt"
+	"log"
+	"net/url"
+
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -14,8 +18,8 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"log"
-	"net/url"
+
+	"time"
 )
 
 type PostgresQuerier struct {
@@ -33,10 +37,18 @@ func NewPostgresQuerier(ctx context.Context, url string) (*PostgresQuerier, erro
 	}
 
 	// Open the connection using the DataDog wrapper methods
-	querier.dbConn, err = sqlx.Open("pgx", url)
+	db, err := sqlx.Open("pgx", url)
 	if err != nil {
-		return &querier, err
+		return nil, fmt.Errorf("opening database connection: %w", err)
 	}
+
+	// Set reasonable pool limits for better concurrency handling
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+
+	querier.dbConn = db
+
 	log.Print("opened database connection")
 
 	// Ping the database to check that the connection is actually working
@@ -118,30 +130,43 @@ func (q *PostgresQuerier) migrationsURL() (string, error) {
 // WithTransaction creates a new transaction and handles rollback/commit based on the
 // error object returned by the `TxFn`
 func (q *PostgresQuerier) WithTransaction(ctx context.Context, fn func(*sqlx.Tx) error) (err error) {
+	// Create a context with timeout for the transaction
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 
-	// Starting database transaction
 	tx, err := q.dbConn.BeginTxx(ctx, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("beginning transaction: %w", err)
 	}
 
 	defer func() {
 		if p := recover(); p != nil {
 			// a panic occurred, rollback and re-panic
-			_ = tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				log.Printf("error rolling back after panic: %v", rollbackErr)
+			}
 			panic(p)
 		} else if err != nil {
 			// something went wrong, rollback
-			err = tx.Rollback()
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				err = fmt.Errorf("error rolling back: %v, original error: %w", rollbackErr, err)
+				return
+			}
 		} else {
 			// all good, commit
-			err = tx.Commit()
+			if commitErr := tx.Commit(); commitErr != nil {
+				err = fmt.Errorf("error committing transaction: %w", commitErr)
+			}
 		}
 	}()
 
-	// The database transaction starts taking effect here
 	err = fn(tx)
-	return err
+	if err != nil {
+		return fmt.Errorf("executing transaction: %w", err)
+	}
+	return nil
 }
 
 ////////////////////////////////// Database Querier domain operations /////////////////////////////////////////////////////////
@@ -192,17 +217,12 @@ func (q *PostgresQuerier) SelectUser(ctx context.Context, userID int) (*entity.U
 const selectCheckTransactionSQL = `SELECT count(*) FROM game_results WHERE transaction_id = $1`
 
 func (q *PostgresQuerier) TransactionIDExist(ctx context.Context, transactionID string) (bool, error) {
-
-	row := q.dbConn.QueryRowContext(ctx, selectCheckTransactionSQL, transactionID)
 	var count int64
-
-	err := row.Scan(&count)
-
-	if count > 0 {
-		return true, err
-	} else {
-		return false, err
+	err := q.dbConn.QueryRowContext(ctx, selectCheckTransactionSQL, transactionID).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("checking transaction existence: %w", err)
 	}
+	return count > 0, nil
 }
 
 const updateUserSQL = `
@@ -217,7 +237,19 @@ func (q *PostgresQuerier) UpdateUserBalance(ctx context.Context, txn sqlx.Tx, us
 		Balance: balance,
 	}
 
-	_, err := txn.NamedExecContext(ctx, updateUserSQL, user)
+	result, err := txn.NamedExecContext(ctx, updateUserSQL, user)
+	if err != nil {
+		return fmt.Errorf("updating user balance: %w", err)
+	}
 
-	return err
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("getting rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no user found with ID: %d", userID)
+	}
+
+	return nil
 }

@@ -3,12 +3,13 @@ package dao
 import (
 	"context"
 	"fmt"
-	"github.com/ildomm/account-balance-manager/database"
-	"github.com/ildomm/account-balance-manager/entity"
-	"github.com/jmoiron/sqlx"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/ildomm/account-balance-manager/database"
+	"github.com/ildomm/account-balance-manager/entity"
+	"github.com/jmoiron/sqlx"
 )
 
 type accountDAO struct {

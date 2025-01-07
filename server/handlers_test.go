@@ -5,18 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ildomm/account-balance-manager/entity"
-	"github.com/ildomm/account-balance-manager/test_helpers"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/ildomm/account-balance-manager/entity"
+	"github.com/ildomm/account-balance-manager/test_helpers"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 // TestHealthHandlerSuccess tests the Health function for a successful response.
@@ -69,8 +69,10 @@ func TestGameResultFuncOnSuccess(t *testing.T) {
 
 	// Create the server and set the mock manager
 	server := NewServer()
-	port := rand.Intn(1000) + 8000
+
 	server.WithAccountManager(daoMock)
+	port, err := getAvailablePort(8000)
+	assert.NoError(t, err)
 	server.WithListenAddress(port)
 
 	go func() {
@@ -187,6 +189,38 @@ func TestCreateGameResultFuncOnErrors(t *testing.T) {
 			expectedStatus: http.StatusNotAcceptable,
 			sourceType:     string(entity.TransactionSourceGame),
 		},
+		{
+			name:           "Empty Transaction ID",
+			mockSetup:      nil,
+			userID:         "1",
+			requestBody:    CreateGameResultRequest{GameStatus: "win", Amount: "100", TransactionID: ""},
+			expectedStatus: http.StatusBadRequest,
+			sourceType:     string(entity.TransactionSourceGame),
+		},
+		{
+			name:           "Zero Amount",
+			mockSetup:      nil,
+			userID:         "1",
+			requestBody:    CreateGameResultRequest{GameStatus: "win", Amount: "0.00", TransactionID: "123"},
+			expectedStatus: http.StatusBadRequest,
+			sourceType:     string(entity.TransactionSourceGame),
+		},
+		{
+			name:           "Negative Amount",
+			mockSetup:      nil,
+			userID:         "1",
+			requestBody:    CreateGameResultRequest{GameStatus: "win", Amount: "-100.00", TransactionID: "123"},
+			expectedStatus: http.StatusBadRequest,
+			sourceType:     string(entity.TransactionSourceGame),
+		},
+		{
+			name:           "Missing Source-Type Header",
+			mockSetup:      nil,
+			userID:         "1",
+			requestBody:    CreateGameResultRequest{GameStatus: "win", Amount: "100", TransactionID: "123"},
+			expectedStatus: http.StatusBadRequest,
+			sourceType:     "", // Empty source type to test missing header
+		},
 	}
 
 	for _, tc := range testCases {
@@ -197,8 +231,9 @@ func TestCreateGameResultFuncOnErrors(t *testing.T) {
 			}
 
 			server := NewServer()
-			port := rand.Intn(1000) + 8000
 			server.WithAccountManager(daoMock)
+			port, err := getAvailablePort(8000)
+			assert.NoError(t, err)
 			server.WithListenAddress(port)
 
 			go func() {
@@ -244,8 +279,9 @@ func TestRetrieveUserFuncOnSuccess(t *testing.T) {
 
 	// Create the server and set the mock manager
 	server := NewServer()
-	port := rand.Intn(1000) + 8000
 	server.WithAccountManager(daoMock)
+	port, err := getAvailablePort(8000)
+	assert.NoError(t, err)
 	server.WithListenAddress(port)
 
 	go func() {
@@ -309,6 +345,18 @@ func TestRetrieveUserFuncOnErrors(t *testing.T) {
 			userID:         "1",
 			expectedStatus: http.StatusInternalServerError,
 		},
+		{
+			name:           "Zero User ID",
+			mockSetup:      nil,
+			userID:         "0",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Negative User ID",
+			mockSetup:      nil,
+			userID:         "-1",
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -319,8 +367,9 @@ func TestRetrieveUserFuncOnErrors(t *testing.T) {
 			}
 
 			server := NewServer()
-			port := rand.Intn(1000) + 8000
 			server.WithAccountManager(daoMock)
+			port, err := getAvailablePort(8000)
+			assert.NoError(t, err)
 			server.WithListenAddress(port)
 
 			go func() {

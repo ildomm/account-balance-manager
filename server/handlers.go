@@ -1,14 +1,18 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/mux"
-	"github.com/ildomm/account-balance-manager/dao"
-	"github.com/ildomm/account-balance-manager/entity"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/ildomm/account-balance-manager/dao"
+	"github.com/ildomm/account-balance-manager/entity"
 )
 
 // accountHandler handles all requests related to game results.
@@ -24,12 +28,13 @@ func NewAccountHandler(accountDAO dao.DAO) *accountHandler {
 
 // CreateGameResultFunc handles the request to create a new game result.
 func (h *accountHandler) CreateGameResultFunc(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	// Validate the headers.
 	transactionSource := entity.ParseTransactionSource(strings.ToLower(r.Header.Get("Source-Type")))
 	if transactionSource == nil {
 		WriteErrorResponse(w, http.StatusBadRequest, []string{entity.ErrInvalidTransactionSource.Error()})
 		return
-
 	}
 
 	// Validate the request body.
@@ -39,9 +44,15 @@ func (h *accountHandler) CreateGameResultFunc(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Validate amount type cast
+	// Basic request validation
+	if req.TransactionID == "" {
+		WriteErrorResponse(w, http.StatusBadRequest, []string{"transaction_id is required"})
+		return
+	}
+
+	// Validate amount type cast and value
 	amount, err := strconv.ParseFloat(req.Amount, 64)
-	if err != nil {
+	if err != nil || amount <= 0 {
 		WriteErrorResponse(w, http.StatusBadRequest, []string{entity.ErrInvalidAmount.Error()})
 		return
 	}
@@ -49,33 +60,34 @@ func (h *accountHandler) CreateGameResultFunc(w http.ResponseWriter, r *http.Req
 	// Validate the game status.
 	if req.GameStatus != entity.GameStatusWin && req.GameStatus != entity.GameStatusLose {
 		WriteErrorResponse(w, http.StatusBadRequest, []string{entity.ErrInvalidGameStatus.Error()})
+		return
 	}
 
-	// Extract the user ID from the request path.
+	// Extract and validate the user ID from the request path.
 	vars := mux.Vars(r)
-
-	// Convert the user ID to an integer.
 	userID, err := strconv.Atoi(vars["id"])
-	if err != nil {
+	if err != nil || userID <= 0 {
 		WriteErrorResponse(w, http.StatusBadRequest, []string{entity.ErrInvalidUser.Error()})
 		return
 	}
 
-	// Perform the business logic.
-	_, err = h.accountDAO.CreateGameResult(r.Context(), userID, req.GameStatus, amount, *transactionSource, req.TransactionID)
-	if err != nil {
+	// Set timeout for the operation
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
 
+	// Perform the business logic.
+	_, err = h.accountDAO.CreateGameResult(ctx, userID, req.GameStatus, amount, *transactionSource, req.TransactionID)
+	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrUserNotFound):
 			WriteErrorResponse(w, http.StatusNotFound, []string{err.Error()})
-
 		case errors.Is(err, entity.ErrTransactionIdExists) || errors.Is(err, entity.ErrUserNegativeBalance):
 			WriteErrorResponse(w, http.StatusNotAcceptable, []string{err.Error()})
-
 		default:
-			WriteErrorResponse(w, http.StatusInternalServerError, []string{err.Error()})
+			// Log the actual error but return a generic message
+			log.Printf("Internal error: %v", err)
+			WriteErrorResponse(w, http.StatusInternalServerError, []string{"An internal error occurred"})
 		}
-
 		return
 	}
 
@@ -84,28 +96,30 @@ func (h *accountHandler) CreateGameResultFunc(w http.ResponseWriter, r *http.Req
 
 // RetrieveUserFunc handles the request to retrieve the account user.
 func (h *accountHandler) RetrieveUserFunc(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
-	// Extract the user ID from the request path.
+	// Extract and validate the user ID from the request path.
 	vars := mux.Vars(r)
-
-	// Convert the user ID to an integer.
 	userID, err := strconv.Atoi(vars["id"])
-	if err != nil {
+	if err != nil || userID <= 0 {
 		WriteErrorResponse(w, http.StatusBadRequest, []string{entity.ErrInvalidUser.Error()})
 		return
 	}
 
-	user, err := h.accountDAO.RetrieveUser(r.Context(), userID)
-	if err != nil {
+	// Set timeout for the operation
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
 
+	user, err := h.accountDAO.RetrieveUser(ctx, userID)
+	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrUserNotFound):
 			WriteErrorResponse(w, http.StatusNotFound, []string{err.Error()})
-
 		default:
-			WriteErrorResponse(w, http.StatusInternalServerError, []string{err.Error()})
+			// Log the actual error but return a generic message
+			log.Printf("Internal error: %v", err)
+			WriteErrorResponse(w, http.StatusInternalServerError, []string{"An internal error occurred"})
 		}
-
 		return
 	}
 

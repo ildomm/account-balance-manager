@@ -46,6 +46,7 @@ load_test() {
     # Fire off POST requests for each user concurrently
     for user_id in "${USER_IDS[@]}"; do
       post_transaction "$user_id" "$TRANSACTION_AMOUNT" &
+      post_transaction "$user_id" "-$TRANSACTION_AMOUNT" &
     done
     # Wait for all background jobs to complete before continuing with the next iteration
     wait
