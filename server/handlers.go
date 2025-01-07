@@ -1,18 +1,15 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
+	"github.com/gorilla/mux"
+	"github.com/ildomm/account-balance-manager/dao"
+	"github.com/ildomm/account-balance-manager/entity"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/gorilla/mux"
-	"github.com/ildomm/account-balance-manager/dao"
-	"github.com/ildomm/account-balance-manager/entity"
 )
 
 // accountHandler handles all requests related to game results.
@@ -71,12 +68,8 @@ func (h *accountHandler) CreateGameResultFunc(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Set timeout for the operation
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
 	// Perform the business logic.
-	_, err = h.accountDAO.CreateGameResult(ctx, userID, req.GameStatus, amount, *transactionSource, req.TransactionID)
+	_, err = h.accountDAO.CreateGameResult(r.Context(), userID, req.GameStatus, amount, *transactionSource, req.TransactionID)
 	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrUserNotFound):
@@ -106,11 +99,7 @@ func (h *accountHandler) RetrieveUserFunc(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Set timeout for the operation
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	user, err := h.accountDAO.RetrieveUser(ctx, userID)
+	user, err := h.accountDAO.RetrieveUser(r.Context(), userID)
 	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrUserNotFound):
